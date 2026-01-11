@@ -43,15 +43,10 @@ class ActorViewSet(
     CinemaPermissionMixin,
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
+    mixins.CreateModelMixin,
 ):
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_staff:
-            return Actor.objects.all()
-        return Actor.objects.none()
 
 
 class CinemaHallViewSet(
@@ -71,6 +66,7 @@ class MovieViewSet(
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
 ):
     queryset = Movie.objects.prefetch_related("genres", "actors")
     serializer_class = MovieSerializer
@@ -166,9 +162,10 @@ class OrderViewSet(
     )
     serializer_class = OrderSerializer
     pagination_class = OrderPagination
-    permission_classes = [IsAdminOrIfAuthenticatedReadOnly]
 
     def get_queryset(self):
+        if self.request.user.is_staff:
+            return Order.objects.all()
         return Order.objects.filter(user=self.request.user)
 
     def get_serializer_class(self):
