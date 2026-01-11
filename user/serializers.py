@@ -47,7 +47,11 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=False)
+    password = serializers.CharField(
+        write_only=True,
+        required=False,
+        min_length=5,
+    )
 
     class Meta:
         model = get_user_model()
@@ -56,3 +60,17 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "password": {"write_only": True}
         }
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+
+        # update normal fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        # handle password properly
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+        return instance

@@ -34,29 +34,3 @@ class MeView(RetrieveUpdateAPIView):
     def get_object(self):
         # return the currently authenticated user
         return self.request.user
-
-    def update(self, request, *args, **kwargs):
-        user = self.get_object()
-        data = request.data.copy()  # make mutable copy
-
-        password = data.pop('password', None)
-
-        # Update other fields
-        serializer = self.get_serializer(user, data=data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        # Update password separately if provided
-        if password:
-            if len(password) < 5:
-                return Response(
-                    {
-                        "password": "Password must be at"
-                                    " least 5 characters long."
-                    },
-                    status=400
-                )
-            user.set_password(password)
-            user.save()
-
-        return Response(self.get_serializer(user).data)
