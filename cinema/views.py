@@ -20,23 +20,42 @@ from cinema.serializers import (
     OrderListSerializer,
 )
 
+from .permissions.permission import IsAdminOrIfAuthenticatedReadOnly
 
-class GenreViewSet(viewsets.ModelViewSet):
+
+class CinemaPermissionMixin:
+    permission_classes = [IsAdminOrIfAuthenticatedReadOnly]
+
+
+class GenreViewSet(CinemaPermissionMixin, viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
+    http_method_names = ['get', 'post']
 
-class ActorViewSet(viewsets.ModelViewSet):
+
+class ActorViewSet(CinemaPermissionMixin, viewsets.ModelViewSet):
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
 
+    http_method_names = ['get', 'post']
 
-class CinemaHallViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Actor.objects.all()
+        # Non-admins cannot see any actor → queryset is empty → retrieve will 404
+        return Actor.objects.none()
+
+
+class CinemaHallViewSet(CinemaPermissionMixin, viewsets.ModelViewSet):
     queryset = CinemaHall.objects.all()
     serializer_class = CinemaHallSerializer
 
+    http_method_names = ['get', 'post']
 
-class MovieViewSet(viewsets.ModelViewSet):
+
+class MovieViewSet(CinemaPermissionMixin, viewsets.ModelViewSet):
     queryset = Movie.objects.prefetch_related("genres", "actors")
     serializer_class = MovieSerializer
 
@@ -76,7 +95,7 @@ class MovieViewSet(viewsets.ModelViewSet):
         return MovieSerializer
 
 
-class MovieSessionViewSet(viewsets.ModelViewSet):
+class MovieSessionViewSet(CinemaPermissionMixin, viewsets.ModelViewSet):
     queryset = (
         MovieSession.objects.all()
         .select_related("movie", "cinema_hall")
@@ -118,12 +137,15 @@ class OrderPagination(PageNumberPagination):
     max_page_size = 100
 
 
-class OrderViewSet(viewsets.ModelViewSet):
+class OrderViewSet(CinemaPermissionMixin, viewsets.ModelViewSet):
     queryset = Order.objects.prefetch_related(
         "tickets__movie_session__movie", "tickets__movie_session__cinema_hall"
     )
     serializer_class = OrderSerializer
     pagination_class = OrderPagination
+    permission_classes = [IsAdminOrIfAuthenticatedReadOnly]
+
+    http_method_names = ['get', 'post']
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
