@@ -39,7 +39,7 @@ class MeView(RetrieveUpdateAPIView):
         user = self.get_object()
         data = request.data.copy()  # make mutable copy
 
-        password = data.pop('password', None)  # remove password from normal update
+        password = data.pop('password', None)
 
         # Update other fields
         serializer = self.get_serializer(user, data=data, partial=True)
@@ -49,8 +49,13 @@ class MeView(RetrieveUpdateAPIView):
         # Update password separately if provided
         if password:
             if len(password) < 5:
-                return Response({"password": "Password must be at least 5 characters long."},
-                                status=400)
+                return Response(
+                    {
+                        "password": "Password must be at"
+                                    " least 5 characters long."
+                    },
+                    status=400
+                )
             user.set_password(password)
             user.save()
 

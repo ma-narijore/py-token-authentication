@@ -11,8 +11,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
-        if len(attrs['password']) <= 5:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        if len(attrs['password']) < 5:
+            raise serializers.ValidationError(
+                {
+                    "password": "Password must be at least 5 characters long."
+                }
+            )
         return attrs
 
     def create(self, validated_data):
@@ -30,9 +34,13 @@ class LoginSerializer(serializers.Serializer):
         if username and password:
             user = authenticate(username=username, password=password)
             if not user:
-                raise serializers.ValidationError("Invalid username or password")
+                raise serializers.ValidationError(
+                    "Invalid username or password"
+                )
         else:
-            raise serializers.ValidationError("Both username and password are required")
+            raise serializers.ValidationError(
+                "Both username and password are required"
+            )
 
         attrs['user'] = user
         return attrs
@@ -48,5 +56,3 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "password": {"write_only": True}
         }
-
-
